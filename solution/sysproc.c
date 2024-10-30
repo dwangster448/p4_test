@@ -5,7 +5,7 @@
 #include "param.h"
 #include "memlayout.h"
 #include "mmu.h"
-#include "proc.h"
+#include "pstat.h"
 
 int
 sys_fork(void)
@@ -88,4 +88,18 @@ sys_uptime(void)
   xticks = ticks;
   release(&tickslock);
   return xticks;
+}
+
+int
+settickets(int n)
+{
+  //TODO: Finish implementation for dynamic ticket allocation
+  return 0;
+}
+
+int
+getpinfo(struct pstat*)
+{
+  //TODO: Finish implementation for dynamic ticket allocation
+  return 0;
 }

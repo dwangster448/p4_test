@@ -1,8 +1,9 @@
 #include "types.h"
 #include "stat.h"
-#include "user.h"
+#include "user.h" //Syscall reference begins here
 #include "pstat.h"
 #include "fcntl.h"
+#include "syscall.h"
 
 #define INITIAL_PROCESSES 10
 #define ADDITIONAL_PROCESSES 6
