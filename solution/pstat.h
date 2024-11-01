@@ -1,4 +1,6 @@
 #include "param.h"
+// #ifndef PSTAT_H //Begins guard against redefinition in preprocessor. Multiple reference in #include "pstat.h" only occurs once
+// #define PSTAT_H
 
 struct pstat {
   int inuse[NPROC];      // Whether this slot of the process table is in use (1 or 0)
@@ -9,3 +11,5 @@ struct pstat {
   int stride[NPROC];     // Stride value for each process
   int rtime[NPROC];      // Total running time of each process
 };
+
+// #endif //End of guard region 

@@ -8,7 +8,8 @@
 #include "spinlock.h"
 
 int global_ticket = 0;
-int global_stride;
+int global_stride = 0;
+int global_pass = 0;
 int STRIDE1 = 5; //TODO: Find when and how to initialize STRIDE1
 
 struct {
@@ -162,6 +163,9 @@ userinit(void)
 
   p->state = RUNNABLE;
 
+  global_ticket += p->tickets;    
+  global_stride = STRIDE1 / global_ticket;
+
   release(&ptable.lock);
 }
 
@@ -229,8 +233,11 @@ fork(void)
   np->state = RUNNABLE;
 
   //Critical region: Add ticket of process to global ticket
-  global_ticket += np->tickets;
-  global_stride = STRIDE1 / global_ticket;
+  global_ticket += curproc->tickets;
+
+  if (global_ticket != 0)
+    global_stride = STRIDE1 / global_ticket;
+  curproc->remain = global_pass - curproc->pass;
 
   release(&ptable.lock);
 
@@ -265,6 +272,7 @@ exit(void)
 
   acquire(&ptable.lock);
 
+
   // Parent might be sleeping in wait().
   wakeup1(curproc->parent);
 
@@ -279,8 +287,15 @@ exit(void)
 
   // Jump into the scheduler, never to return.
   curproc->state = ZOMBIE;
+  
+  global_ticket -= p->tickets;
+  global_stride = STRIDE1 / global_ticket;
+
+  p->remain = global_pass - p->pass;
+  //TODO: Release(&ptable.lock) //??
+
   sched();
-  panic("zombie exit");
+  panic("zombie exit"); //Zombie processes terminated but still scheduled
 }
 
 // Wait for a child process to exit and return its pid.
@@ -321,6 +336,12 @@ wait(void)
       release(&ptable.lock);
       return -1;
     }
+
+    //Guarantees at least 1 child process exists.
+    global_ticket -= p->tickets;
+    global_stride = STRIDE1 / global_ticket;
+
+    p->remain = global_pass - p->pass;
 
     // Wait for children to exit.  (See wakeup1 call in proc_exit.)
     sleep(curproc, &ptable.lock);  //DOC: wait-sleep
@@ -436,10 +457,10 @@ sleep(void *chan, struct spinlock *lk)
   struct proc *p = myproc();
   
   if(p == 0)
-    panic("sleep");
+    panic("sleep"); //Can't sleep without proper process
 
   if(lk == 0)
-    panic("sleep without lk");
+    panic("sleep without lk"); //Can't sleep with lock
 
   // Must acquire ptable.lock in order to
   // change p->state and then call sched.
@@ -476,8 +497,14 @@ wakeup1(void *chan)
   struct proc *p;
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-    if(p->state == SLEEPING && p->chan == chan)
+    if(p->state == SLEEPING && p->chan == chan) {
       p->state = RUNNABLE;
+      
+      global_ticket += p->tickets;
+      global_stride = STRIDE1 / global_ticket;
+      p->pass = global_pass + p->remain;
+      break; //Only want 1 process to wake up
+    }
 }
 
 // Wake up all processes sleeping on chan.
@@ -501,6 +528,11 @@ kill(int pid)
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p->pid == pid){
       p->killed = 1;
+
+      global_ticket -= p->tickets;
+      global_stride = STRIDE1 / global_ticket;
+      p->remain = global_pass - p->pass;
+
       // Wake process from sleep if necessary.
       if(p->state == SLEEPING)
         p->state = RUNNABLE;
