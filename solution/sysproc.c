@@ -7,6 +7,7 @@
 #include "mmu.h"
 #include "proc.h"
 #include "pstat.h"
+#include <stdio.h>
 
 // #include "pstat.h"
 
@@ -94,15 +95,34 @@ sys_uptime(void)
 }
 
 int
-settickets(int n)
+settickets(int n) //TODO: Add lock parameter implementation for dynamic ticket allocation
 {
-  //TODO: Finish implementation for dynamic ticket allocation
+  acquire(&tickslock);
+
+  if (n < 1) {
+    n=8;
+  }
+  if (n > 5) {
+    return 1; //TODO: Check if return value = -1
+  }
+  myproc()->tickets = n;
+
+  release(&tickslock);
   return 0;
 }
 
 int
-getpinfo(struct pstat*)
+getpinfo(struct pstat*) //TODO: Add lock parameter implementation for dynamic ticket allocation
 {
-  //TODO: Finish implementation for dynamic ticket allocation
+  struct proc *p = myproc();
+  acquire(&tickslock);
+
+  if (p == 0) {
+    return -1;
+  }
+
+  // printf("PID: %d", p->pid);
+  release(&tickslock);
+
   return 0;
 }

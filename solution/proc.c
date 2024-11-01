@@ -6,6 +6,8 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include "limits.h"
+#include <stddef.h>
 
 int global_ticket = 0;
 int global_stride = 0;
@@ -376,6 +378,37 @@ scheduler(void)
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
+      int min_pass = INT_MAX;
+      int curr_pass;
+      struct proc *min_proc = NULL;
+      for (struct proc *curr_proc = ptable.proc; curr_proc < &ptable.proc[NPROC]; curr_proc++) {
+        curr_pass = curr_proc->pass;
+        if (curr_pass < min_pass) {
+          min_pass = curr_pass;
+          min_proc = curr_proc;
+        }
+        //TODO: Add tiebreaker for runtime
+        else if (curr_pass == min_pass) {
+          // If runtime and pass values are equal
+          if (curr_proc->rtime == min_proc->rtime) {
+            if (min_proc->pid < curr_proc->pid) {
+              
+            }
+            else {
+              min_proc = curr_proc;
+            }
+          }
+          // If current runtime is less than min process's runtime
+          if (curr_proc->rtime < min_proc->rtime) {
+            min_proc = curr_proc;
+          }
+          // Else do nothing
+        }
+        else {
+          
+        }
+      }
+      p = min_proc;
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
