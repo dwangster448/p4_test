@@ -25,6 +25,9 @@ void itoa(int n, char* s);
 void write_csv_line(int fd, int current_time, int pid, int tickets, int pass, int stride, int runtime);
 
 int main() {
+
+  // printf(1, "In workload\n");
+  
   int i;
   int pid;
 

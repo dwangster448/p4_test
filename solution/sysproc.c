@@ -106,23 +106,49 @@ settickets(int n) //TODO: Add lock parameter implementation for dynamic ticket a
     return 1; //TODO: Check if return value = -1
   }
   myproc()->tickets = n;
+	// TODO: Update global values
+
+	// TODO change process's stride value
+	// myproc()->stride = STRIDE1 / myproc()->tickets;
+
+	// TODO change process's remain?? It's not leaving the queue tho
+	// 
+
+	// TODO change process's pass value
 
   release(&tickslock);
   return 0;
 }
 
 int
-getpinfo(struct pstat*) //TODO: Add lock parameter implementation for dynamic ticket allocation
+getpinfo(struct pstat* stat) //TODO: Add lock parameter implementation for dynamic ticket allocation
 {
-  struct proc *p = myproc();
-  acquire(&tickslock);
+	struct proc *p = myproc();
+	acquire(&tickslock);
 
-  if (p == 0) {
-    return -1;
-  }
+	if (p == 0) {
+		return -1;
+	}
 
-  // printf("PID: %d", p->pid);
-  release(&tickslock);
+	if (procindex(p) == -1) {
+		return -1;
+	}
 
-  return 0;
+	int index = procindex(p); // Index to insert into
+
+	if (p->state == UNUSED) {
+		stat->inuse[index] = 0;
+	}
+	else {
+		stat->inuse[index] = 1;
+	}
+	stat->tickets[index] = p->tickets;
+	stat->pid[index] = p->pid;
+	stat->pass[index] = p->pass;
+	stat->remain[index] = p->remain;
+	stat->stride[index] = p->stride;
+	stat->rtime[index] = p->rtime;
+	release(&tickslock);
+
+	return 0;
 }

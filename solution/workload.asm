@@ -21,6 +21,8 @@ int main() {
    f:	53                   	push   %ebx
   10:	51                   	push   %ecx
   11:	83 ec 50             	sub    $0x50,%esp
+  // printf(1, "In workload\n");
+  
   int i;
   int pid;
 

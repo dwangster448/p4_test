@@ -190,6 +190,9 @@ UPROGS=\
 	_wc\
 	_zombie\
 	_workload\
+	_test_1\
+	_test_2\
+	_test_3\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
