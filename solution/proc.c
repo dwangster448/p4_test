@@ -243,7 +243,7 @@ int fork(void)
 
   if (global_ticket != 0)
     global_stride = STRIDE1 / global_ticket;
-  curproc->remain = global_pass - curproc->pass;
+  curproc->remain = curproc->pass - global_pass;
 
   release(&ptable.lock);
 
@@ -428,10 +428,10 @@ void scheduler(void)
       switchuvm(p);
       p->state = RUNNING;
 
-      // cprintf("About to run: %s [pid %d]\n", p->name, p->pid);
+      cprintf("About to run: %s [pid %d]\n", p->name, p->pid);
       swtch(&(c->scheduler), p->context);
       switchkvm();
-      //	  cprintf("sched\n");
+      //cprintf("sched\n");
 
       // Process is done running for now.
       // It should have changed its p->state before coming back.

@@ -25,8 +25,11 @@ static int find_my_stats_index(struct pstat *s) {
 
     int mypid = getpid();
 
-    if (getpinfo(s) == -1)
+    if (getpinfo(s) == -1) {
+        PRINTF("getpinfo failed\n"); 
         return -1;
+    }
+    
     
     // Find an entry matching my pid
     for (int i = 0; i < NPROC; i++)

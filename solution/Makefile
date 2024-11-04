@@ -295,4 +295,8 @@ tar:
 	cp dist/* dist/.gdbinit.tmpl /tmp/xv6
 	(cd /tmp; tar cf - xv6) | gzip >xv6-rev10.tar.gz  # the next one will be 10 (9/17)
 
+_test_1: test_1.o $(ULIB)
+	$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o _test_1 test_1.o $(ULIB)
+	$(OBJDUMP) -S _test_1 > test_1.asm
+
 .PHONY: dist-test dist
