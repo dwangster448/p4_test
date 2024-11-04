@@ -9,6 +9,8 @@
 #include "pstat.h"
 #include <stdio.h>
 
+extern struct pstat stat;
+
 int sys_fork(void)
 {
   return fork();
@@ -86,9 +88,12 @@ int sys_uptime(void)
   return xticks;
 }
 
-int settickets(int n) // TODO: Add lock parameter implementation for dynamic ticket allocation
+int settickets(void) //This is not a normal syscall, need to use argint, argptr to retrieve values
 {
   acquire(&tickslock);
+
+  int n = 0;
+  //use a argint here to retrieve int n argument
 
   if (n < 1)
   {
@@ -114,29 +119,37 @@ int settickets(int n) // TODO: Add lock parameter implementation for dynamic tic
 }
 
 // Function to initialize a pstat structure
-void init_pstat(struct pstat *stat) {
-    for (int i = 0; i < NPROC; i++) {
-        stat->inuse[i] = 0;
-        stat->tickets[i] = 8;
-        stat->pid[i] = 0;
-        stat->pass[i] = 0;
-        stat->remain[i] = 0;
-        stat->stride[i] = 0;
-        stat->rtime[i] = 0;
-    }
+void init_pstat(struct pstat *stat)
+{
+  for (int i = 0; i < NPROC; i++)
+  {
+    stat->inuse[i] = 0;
+    stat->tickets[i] = 8;
+    stat->pid[i] = 0;
+    stat->pass[i] = 0;
+    stat->remain[i] = 0;
+    stat->stride[i] = 0;
+    stat->rtime[i] = 0;
+  }
 }
 
-int getpinfo(struct pstat *stat) // TODO: Add lock parameter implementation for dynamic ticket allocation
+int getpinfo(void) //This is not a normal syscall, need to use argint, argptr to retrieve values
 {
-  acquire(&tickslock);
-  struct pstat local_stat;
+  // acquire(&tickslock);
+  // struct pstat local_stat;
 
-  init_pstat(&local_stat);
+  // init_pstat(&local_stat);
 
   // init_pstat(&stat);
 
+  struct pstat *stat;
+
+  if (argptr(0, (char **)&stat, sizeof(stat)) < 0) //0 indexing arguments
+  {
+    return -1; // Failed fetching pointer to stat structure
+  }
+
   struct proc *p = myproc();
-  
 
   if (p == 0)
   {
@@ -150,22 +163,30 @@ int getpinfo(struct pstat *stat) // TODO: Add lock parameter implementation for 
     return -1; // Out-of-bounds error
   }
 
-  cprintf("getpinfo called for PID: %d, Index: %d, State: %d\n", p->pid, index, p->state);
+  // cprintf("getpinfo called for PID: %d, Index: %d, State: %d\n", p->pid, index, p->state);
+
+  stat->inuse[index] = (p->state != UNUSED) ? 1 : 0;
+  stat->tickets[index] = p->tickets;
+  stat->pid[index] = p->pid;
+  stat->pass[index] = p->pass;
+  stat->remain[index] = p->remain;
+  stat->stride[index] = p->stride;
+  stat->rtime[index] = p->rtime;
 
   // Update the local_stat with current process information
-  local_stat.inuse[index] = (p->state != UNUSED) ? 1 : 0;
-  local_stat.tickets[index] = p->tickets;
-  local_stat.pid[index] = p->pid;
-  local_stat.pass[index] = p->pass;
-  local_stat.remain[index] = p->remain;
-  local_stat.stride[index] = p->stride;
-  local_stat.rtime[index] = p->rtime;
+  // local_stat.inuse[index] = (p->state != UNUSED) ? 1 : 0;
+  // local_stat.tickets[index] = p->tickets;
+  // local_stat.pid[index] = p->pid;
+  // local_stat.pass[index] = p->pass;
+  // local_stat.remain[index] = p->remain;
+  // local_stat.stride[index] = p->stride;
+  // local_stat.rtime[index] = p->rtime;
 
   // Copy the filled local_stat to the pointer passed to the function
-  *stat = local_stat;
+  // *stat = local_stat;
 
-  release(&tickslock);
+  // release(&tickslock);
 
-  cprintf("Reached end of getpinfo for PID: %d\n", p->pid);
+  // cprintf("Reached end of getpinfo for PID: %d\n", p->pid);
   return 0;
 }

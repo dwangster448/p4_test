@@ -15,9 +15,14 @@ main(int argc, char* argv[])
     int old_pass = ps.pass[my_idx];
     int old_stride = ps.stride[my_idx];
     
+    printf(1, "old_rtime: %d\n", old_rtime);
+    printf(1, "old_pass: %d\n", old_pass);
+    printf(1, "old_stride: %d\n", old_stride);
+
     int extra = 4;
 
-    run_until(old_rtime + extra);
+    printf(1, "Target rttime: %d\n", old_stride + extra);
+    run_until(old_rtime + extra);  //This is imporant: test_helper function will continue until (old_rtime + extra) is reached
 
     my_idx = find_my_stats_index(&ps);
     ASSERT(my_idx != -1, "Could not get process stats from pgetinfo");

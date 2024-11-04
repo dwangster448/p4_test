@@ -299,7 +299,7 @@ void exit(void)
   global_ticket -= p->tickets;
   global_stride = STRIDE1 / global_ticket;
 
-  p->remain = global_pass - p->pass;
+  p->remain = p->pass - global_pass;
 
   sched();
   panic("zombie exit"); // Zombie processes terminated but still scheduled
@@ -351,7 +351,7 @@ int wait(void)
     global_ticket -= p->tickets;
     global_stride = STRIDE1 / global_ticket;
 
-    p->remain = global_pass - p->pass;
+    p->remain = p->pass - global_pass;
 
     // Wait for children to exit.  (See wakeup1 call in proc_exit.)
     sleep(curproc, &ptable.lock); // DOC: wait-sleep
@@ -581,7 +581,7 @@ void scheduler(void)
 
         global_ticket -= p->tickets;
         global_stride = STRIDE1 / global_ticket;
-        p->remain = global_pass - p->pass;
+        p->remain = p->pass - global_pass;
 
         // Wake process from sleep if necessary.
         if (p->state == SLEEPING)

@@ -72,6 +72,9 @@ static __attribute__((unused)) void run_until(int target_rtime) {
     struct pstat ps;
     while (1) {
         int my_idx = find_my_stats_index(&ps);
+
+        PRINTF("ps[%d] rttime: %d\n",my_idx, ps.rtime[my_idx]); 
+
         ASSERT(my_idx != -1, "Could not get process stats from pgetinfo");
 
         if (ps.rtime[my_idx] >= target_rtime)
