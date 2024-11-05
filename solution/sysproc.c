@@ -88,31 +88,44 @@ int sys_uptime(void)
   return xticks;
 }
 
-int settickets(void) //This is not a normal syscall, need to use argint, argptr to retrieve values
+int settickets(void) // This is not a normal syscall, need to use argint, argptr to retrieve values
 {
   acquire(&tickslock);
 
-  int n = 0;
-  //use a argint here to retrieve int n argument
+  int n;
+  // use a argint here to retrieve int n argument
+  if (argint(0, &n) < 0)
+  {
+    return -1; // Failed fetching value to integer
+  }
 
   if (n < 1)
   {
     n = 8;
   }
-  if (n > 5)
+  if (n > 5) // TODO What happens when value is larger than 5
   {
-    return 1; // TODO: Check if return value = -1
+    return -1; // invalid value, cannot be greater than 5
   }
-  myproc()->tickets = n;
+  int prev_n = myproc()->tickets;
+
   // TODO: Update global values
+  int difference = n - prev_n;
 
-  // TODO change process's stride value
-  // myproc()->stride = STRIDE1 / myproc()->tickets;
+  if ((global_ticket + difference) <= 0) // first check if the new global_ticket value is valid
+  {
+    release(&tickslock);
+    return -1; // Invalid ticket parameter
+  }
+  global_ticket += difference; // Properly set all global values
+  global_stride = STRIDE1 / global_ticket;
 
-  // TODO change process's remain?? It's not leaving the queue tho
-  //
+  int prev_stride = myproc()->stride;
 
-  // TODO change process's pass value
+  myproc()->tickets = n;                                                  // Update current process's tickets to parameter n
+  myproc()->stride = STRIDE1 / myproc()->tickets;                         // New stride (stride`)
+  myproc()->remain = (myproc()->remain * myproc()->stride) / prev_stride; // compute new stride value
+  myproc()->pass = global_pass + myproc()->remain;                        // TODO change process's pass value
 
   release(&tickslock);
   return 0;
@@ -133,7 +146,7 @@ void init_pstat(struct pstat *stat)
   }
 }
 
-int getpinfo(void) //This is not a normal syscall, need to use argint, argptr to retrieve values
+int getpinfo(void) // This is not a normal syscall, need to use argint, argptr to retrieve values
 {
   // acquire(&tickslock);
   // struct pstat local_stat;
@@ -144,7 +157,7 @@ int getpinfo(void) //This is not a normal syscall, need to use argint, argptr to
 
   struct pstat *stat;
 
-  if (argptr(0, (char **)&stat, sizeof(stat)) < 0) //0 indexing arguments
+  if (argptr(0, (char **)&stat, sizeof(stat)) < 0) // 0 indexing arguments
   {
     return -1; // Failed fetching pointer to stat structure
   }

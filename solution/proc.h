@@ -1,3 +1,8 @@
+extern int global_ticket;
+extern int global_stride;
+extern int global_pass;
+extern int STRIDE1;
+
 // Per-CPU state
 struct cpu
 {

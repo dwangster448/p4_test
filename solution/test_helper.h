@@ -72,6 +72,7 @@ static __attribute__((unused)) void run_until(int target_rtime) {
     struct pstat ps;
     while (1) {
         int my_idx = find_my_stats_index(&ps);
+        PRINTF("TARGET RUNTIME: %d", target_rtime);
 
         PRINTF("ps[%d] rttime: %d\n",my_idx, ps.rtime[my_idx]); 
 

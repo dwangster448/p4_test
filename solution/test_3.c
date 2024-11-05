@@ -4,8 +4,7 @@
 #include "pstat.h"
 #include "test_helper.h"
 
-int
-main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     struct pstat ps;
 
@@ -17,9 +16,10 @@ main(int argc, char* argv[])
     // Child has double the tickets of the parent (default = 8)
     int ch_tickets = 8;
 
-    if (pid == 0) {
+    if (pid == 0)
+    {
         // This just has to be large enough that we know it doesn't terminate
-        // before the parent gets some information - note that they should 
+        // before the parent gets some information - note that they should
         // run proportional to their tickets, so it's not completely random
         // One can pick the number and add some safe margin to that
         int rt = 1000;
@@ -33,16 +33,18 @@ main(int argc, char* argv[])
     ASSERT(ch_idx != -1, "Could not get child process stats from pgetinfo");
 
     ASSERT(ps.tickets[my_idx] == pa_tickets, "Parent tickets should be set to %d, \
-but got %d from pgetinfo", pa_tickets, ps.tickets[my_idx]);
+but got %d from pgetinfo",
+           pa_tickets, ps.tickets[my_idx]);
     ASSERT(ps.tickets[ch_idx] == ch_tickets, "Child tickets should be set to %d, \
-but got %d from pgetinfo", ch_tickets, ps.tickets[ch_idx]);
+but got %d from pgetinfo",
+           ch_tickets, ps.tickets[ch_idx]);
 
     int old_rtime = ps.rtime[my_idx];
     int old_pass = ps.pass[my_idx];
 
     int old_ch_rtime = ps.rtime[ch_idx];
     int old_ch_pass = ps.pass[ch_idx];
-    
+
     int extra = 40;
     run_until(old_rtime + extra);
 
@@ -58,24 +60,31 @@ but got %d from pgetinfo", ch_tickets, ps.tickets[ch_idx]);
     int now_ch_pass = ps.pass[ch_idx];
 
     ASSERT(now_pass > old_pass, "Pass didn't increase: old_pass was %d, \
-new_pass is %d", old_pass, now_pass);
+new_pass is %d",
+           old_pass, now_pass);
 
     ASSERT(now_ch_pass > old_ch_pass, "Child pass didn't increase: old_pass was %d, \
-new_pass is %d", old_ch_pass, now_ch_pass);
-    
+new_pass is %d",
+           old_ch_pass, now_ch_pass);
 
     int diff_rtime = now_rtime - old_rtime;
+    printf(1, "diff_rtime: %d\n", diff_rtime);
     int __attribute__((unused)) diff_pass = now_pass - old_pass;
+    printf(1, "diff_pass: %d\n", diff_pass);
     int diff_ch_rtime = now_ch_rtime - old_ch_rtime;
+    printf(1, "diff_ch_rtime: %d\n", diff_ch_rtime);
     int __attribute__((unused)) diff_ch_pass = now_ch_pass - old_ch_pass;
+    printf(1, "diff_ch_pass: %d\n", diff_ch_pass);
 
     int exp_rtime = (diff_ch_rtime * pa_tickets) / ch_tickets;
 
+    printf(1, "exp_rtime: %d\n", exp_rtime);
+
     int margin = 2;
     ASSERT(diff_rtime <= exp_rtime + margin && diff_rtime >= exp_rtime - margin,
-            "Parent got %d ticks, child got %d ticks, parent should be within a \
-%d margin of half the child ticks", diff_rtime, diff_ch_rtime, margin);
-
+           "Parent got %d ticks, child got %d ticks, parent should be within a \
+%d margin of half the child ticks",
+           diff_rtime, diff_ch_rtime, margin);
 
     test_passed();
 

@@ -48,10 +48,12 @@ trap(struct trapframe *tf)
 
   switch(tf->trapno){
 	// TODO This means that a tick has passed, so find running process and increment rtime
-  case T_IRQ0 + IRQ_TIMER:
+  case T_IRQ0 + IRQ_TIMER: // This is the timer interrupt
+    // If it goes into this case, a tick has passed
     if(cpuid() == 0){
       acquire(&tickslock);
       ticks++;
+      global_pass += global_stride;
       wakeup(&ticks);
       release(&tickslock);
 //	  cprintf("tick\n");
