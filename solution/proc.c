@@ -474,7 +474,7 @@ void yield(void)
   acquire(&ptable.lock); // DOC: yieldlock
   myproc()->state = RUNNABLE;
 
-  myproc()->rtime++;
+  //myproc()->rtime++;
 
   sched();
   release(&ptable.lock);
@@ -529,9 +529,10 @@ void sleep(void *chan, struct spinlock *lk)
   p->state = SLEEPING;
 
   //TODO code causes a panic trap upon initialization, also could be global_stride because global = STRIDE1 / 0 (UNDEFINED)
-  // global_ticket -= p->tickets; // Properly set all global values
-  // global_stride = STRIDE1 / global_ticket;
-  // p->remain = p->pass - global_pass;
+  global_ticket -= p->tickets; // Properly set all global values
+  if (global_ticket > 0)
+  global_stride = STRIDE1 / global_ticket;
+  p->remain = p->pass - global_pass;
 
   sched();
 

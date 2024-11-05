@@ -25,6 +25,8 @@ main(int argc, char* argv[])
     run_until(old_rtime + extra);  //This is imporant: test_helper function will continue until (old_rtime + extra) is reached
 
     my_idx = find_my_stats_index(&ps);
+
+
     ASSERT(my_idx != -1, "Could not get process stats from pgetinfo");
 
     int now_rtime = ps.rtime[my_idx];
@@ -40,6 +42,10 @@ calling settickets", old_stride, now_stride);
     int diff_rtime = now_rtime - old_rtime;
     int diff_pass = now_pass - old_pass;
     int exp_pass = diff_rtime * now_stride;
+
+    printf(1, "diff_pass: %d\n", diff_pass);
+
+    printf(1, "exp_pass: %d\n", exp_pass);
 
     ASSERT(diff_pass == exp_pass, "Pass is not incremented correctly by stride. \
             Process got scheduled %d times, with a stride of %d, should have \

@@ -74,7 +74,8 @@ static __attribute__((unused)) void run_until(int target_rtime) {
         int my_idx = find_my_stats_index(&ps);
         PRINTF("TARGET RUNTIME: %d", target_rtime);
 
-        PRINTF("ps[%d] rttime: %d\n",my_idx, ps.rtime[my_idx]); 
+        PRINTF("ps[%d] rttime: %d",my_idx, ps.rtime[my_idx]); 
+        PRINTF("ps[%d] pass: %d",my_idx, ps.pass[my_idx]); 
 
         ASSERT(my_idx != -1, "Could not get process stats from pgetinfo");
 

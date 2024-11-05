@@ -54,9 +54,11 @@ trap(struct trapframe *tf)
       acquire(&tickslock);
       ticks++;
       global_pass += global_stride;
+      //	  cprintf("tick:%d\n", ticks);
       wakeup(&ticks);
+      
       release(&tickslock);
-//	  cprintf("tick\n");
+
     }
     lapiceoi();
     break;
