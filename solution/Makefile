@@ -190,9 +190,6 @@ UPROGS=\
 	_wc\
 	_zombie\
 	_workload\
-	_test_1\
-	_test_2\
-	_test_3\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
@@ -294,9 +291,5 @@ tar:
 	mkdir -p /tmp/xv6
 	cp dist/* dist/.gdbinit.tmpl /tmp/xv6
 	(cd /tmp; tar cf - xv6) | gzip >xv6-rev10.tar.gz  # the next one will be 10 (9/17)
-
-_test_1: test_1.o $(ULIB)
-	$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o _test_1 test_1.o $(ULIB)
-	$(OBJDUMP) -S _test_1 > test_1.asm
 
 .PHONY: dist-test dist

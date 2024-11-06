@@ -121,6 +121,9 @@ int             wait(void);
 void            wakeup(void*);
 void            yield(void);
 int				procindex(struct proc*);
+void            acquirelock(void);
+void            releaselock(void);
+struct proc* gettable(void);
 
 // swtch.S
 void            swtch(struct context**, struct context*);

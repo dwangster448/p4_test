@@ -1,3 +1,5 @@
+
+
 extern int global_ticket;
 extern int global_stride;
 extern int global_pass;

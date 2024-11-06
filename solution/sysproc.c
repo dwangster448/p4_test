@@ -90,7 +90,6 @@ int sys_uptime(void)
 
 int settickets(void) // This is not a normal syscall, need to use argint, argptr to retrieve values
 {
-  acquire(&tickslock);
 
   int n;
   // use a argint here to retrieve int n argument
@@ -98,27 +97,29 @@ int settickets(void) // This is not a normal syscall, need to use argint, argptr
   {
     return -1; // Failed fetching value to integer
   }
+  acquirelock();
 
   if (n < 1)
   {
     n = 8;
   }
-  if (n > 5) // TODO What happens when value is larger than 5
+  else if (n > 32) // TODO What happens when value is larger than 5
   {
-    return -1; // invalid value, cannot be greater than 5
+    n = 32; // invalid value, cannot be greater than 5
   }
   int prev_n = myproc()->tickets;
 
   // TODO: Update global values
   int difference = n - prev_n;
 
-  if ((global_ticket + difference) <= 0) // first check if the new global_ticket value is valid
+  if ((global_ticket + difference) < 0) // first check if the new global_ticket value is valid
   {
-    release(&tickslock);
+    releaselock();
     return -1; // Invalid ticket parameter
   }
   global_ticket += difference; // Properly set all global values
-  global_stride = STRIDE1 / global_ticket;
+  if (global_ticket > 0)
+    global_stride = STRIDE1 / global_ticket;
 
   int prev_stride = myproc()->stride;
 
@@ -127,7 +128,7 @@ int settickets(void) // This is not a normal syscall, need to use argint, argptr
   myproc()->remain = (myproc()->remain * myproc()->stride) / prev_stride; // compute new stride value
   myproc()->pass = global_pass + myproc()->remain;                        // TODO change process's pass value
 
-  release(&tickslock);
+  releaselock();
   return 0;
 }
 
@@ -148,7 +149,7 @@ void init_pstat(struct pstat *stat)
 
 int getpinfo(void) // This is not a normal syscall, need to use argint, argptr to retrieve values
 {
-  // acquire(&tickslock);
+
   // struct pstat local_stat;
 
   // init_pstat(&local_stat);
@@ -161,7 +162,7 @@ int getpinfo(void) // This is not a normal syscall, need to use argint, argptr t
   {
     return -1; // Failed fetching pointer to stat structure
   }
-
+  acquirelock();
   struct proc *p = myproc();
 
   if (p == 0)
@@ -169,22 +170,36 @@ int getpinfo(void) // This is not a normal syscall, need to use argint, argptr t
     return -1;
   }
 
-  int index = procindex(p); // Index to insert into
-  if (index < 0 || index >= NPROC)
-  {
-    release(&tickslock);
-    return -1; // Out-of-bounds error
-  }
+  // int index = procindex(p); // Index to insert into
+  // if (index < 0 || index >= NPROC)
+  // {
+  //   releaselock();
+  //   return -1; // Out-of-bounds error
+  // }
 
   // cprintf("getpinfo called for PID: %d, Index: %d, State: %d\n", p->pid, index, p->state);
 
-  stat->inuse[index] = (p->state != UNUSED) ? 1 : 0;
-  stat->tickets[index] = p->tickets;
-  stat->pid[index] = p->pid;
-  stat->pass[index] = p->pass;
-  stat->remain[index] = p->remain;
-  stat->stride[index] = p->stride;
-  stat->rtime[index] = p->rtime;
+  // stat->inuse[index] = (p->state != UNUSED) ? 1 : 0;
+  // stat->tickets[index] = p->tickets;
+  // stat->pid[index] = p->pid;
+  // stat->pass[index] = p->pass;
+  // stat->remain[index] = p->remain;
+  // stat->stride[index] = p->stride;
+  // stat->rtime[index] = p->rtime;
+
+  int i = 0;
+  struct proc *var = gettable();
+  for (struct proc *currproc = var; currproc < &var[NPROC]; currproc++)
+  {
+    stat->inuse[i] = (currproc->state != UNUSED) ? 1 : 0;
+    stat->tickets[i] = currproc->tickets;
+    stat->pid[i] = currproc->pid;
+    stat->pass[i] = currproc->pass;
+    stat->remain[i] = currproc->remain;
+    stat->stride[i] = currproc->stride;
+    stat->rtime[i] = currproc->rtime;
+    i++;
+  }
 
   // Update the local_stat with current process information
   // local_stat.inuse[index] = (p->state != UNUSED) ? 1 : 0;
@@ -198,7 +213,7 @@ int getpinfo(void) // This is not a normal syscall, need to use argint, argptr t
   // Copy the filled local_stat to the pointer passed to the function
   // *stat = local_stat;
 
-  // release(&tickslock);
+  releaselock();
 
   // cprintf("Reached end of getpinfo for PID: %d\n", p->pid);
   return 0;

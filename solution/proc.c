@@ -98,8 +98,6 @@ found:
   p->state = EMBRYO;
   p->pid = nextpid++;
 
-  release(&ptable.lock);
-
   // Allocate kernel stack.
   if ((p->kstack = kalloc()) == 0)
   {
@@ -129,6 +127,7 @@ found:
   p->tickets = 8;
   p->stride = STRIDE1 / p->tickets; // STRIDE1 / tickets //TODO: Find out how STRIDE1 is obtained
 
+  release(&ptable.lock);
   return p;
 }
 
@@ -167,7 +166,8 @@ void userinit(void)
   p->state = RUNNABLE;
 
   global_ticket += p->tickets;
-  global_stride = STRIDE1 / global_ticket;
+  if (global_ticket > 0)
+    global_stride = STRIDE1 / global_ticket;
 
   release(&ptable.lock);
 }
@@ -241,7 +241,7 @@ int fork(void)
   // Critical region: Add ticket of process to global ticket
   global_ticket += curproc->tickets;
 
-  if (global_ticket != 0)
+  if (global_ticket > 0)
     global_stride = STRIDE1 / global_ticket;
   curproc->remain = curproc->pass - global_pass;
 
@@ -297,7 +297,8 @@ void exit(void)
   curproc->state = ZOMBIE;
 
   global_ticket -= p->tickets;
-  global_stride = STRIDE1 / global_ticket;
+  if (global_ticket > 0)
+    global_stride = STRIDE1 / global_ticket;
 
   p->remain = p->pass - global_pass;
 
@@ -349,8 +350,8 @@ int wait(void)
 
     // Guarantees at least 1 child process exists.
     global_ticket -= p->tickets;
+    if (global_ticket > 0)
     global_stride = STRIDE1 / global_ticket;
-
     p->remain = p->pass - global_pass;
 
     // Wait for children to exit.  (See wakeup1 call in proc_exit.)
@@ -373,6 +374,35 @@ void scheduler(void)
   c->proc = 0;
 
   for (;;)
+ //  #ifdef RR
+   // Enable interrupts on this processor.
+    // sti();
+
+    // // Loop over process table looking for process to run.
+    // acquire(&ptable.lock);
+    // for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    //   if(p->state != RUNNABLE)
+    //     continue;
+
+    //   // Switch to chosen process.  It is the process's job
+    //   // to release ptable.lock and then reacquire it
+    //   // before jumping back to us.
+    //   c->proc = p;
+    //   switchuvm(p);
+    //   p->state = RUNNING;
+
+    //   swtch(&(c->scheduler), p->context);
+    //   switchkvm();
+
+    //   // Process is done running for now.
+    //   // It should have changed its p->state before coming back.
+    //   c->proc = 0;
+    // }
+    // release(&ptable.lock);
+
+
+//   #endif
+ //  #elif defined(STRIDE)
   {
     // Enable interrupts on this processor.
     sti();
@@ -423,6 +453,9 @@ void scheduler(void)
     }
     if (min_proc != NULL)
     {
+      // if (myproc()->pid == 8 || myproc()->pid == 7) {
+      //   cprintf("found pid 7,8\n");
+      // }
       p = min_proc;
       c->proc = p;
       switchuvm(p);
@@ -441,6 +474,8 @@ void scheduler(void)
     }
     release(&ptable.lock);
   }
+  // #else
+  // cprintf("Error, scheduler is not RR or STRIDE")
 }
 
 // Enter scheduler.  Must hold only ptable.lock
@@ -473,8 +508,6 @@ void yield(void)
 {
   acquire(&ptable.lock); // DOC: yieldlock
   myproc()->state = RUNNABLE;
-
-  //myproc()->rtime++;
 
   sched();
   release(&ptable.lock);
@@ -528,10 +561,10 @@ void sleep(void *chan, struct spinlock *lk)
   p->chan = chan;
   p->state = SLEEPING;
 
-  //TODO code causes a panic trap upon initialization, also could be global_stride because global = STRIDE1 / 0 (UNDEFINED)
+  // TODO code causes a panic trap upon initialization, also could be global_stride because global = STRIDE1 / 0 (UNDEFINED)
   global_ticket -= p->tickets; // Properly set all global values
   if (global_ticket > 0)
-  global_stride = STRIDE1 / global_ticket;
+    global_stride = STRIDE1 / global_ticket;
   p->remain = p->pass - global_pass;
 
   sched();
@@ -556,22 +589,25 @@ wakeup1(void *chan)
   struct proc *p;
 
   for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
     if (p->state == SLEEPING && p->chan == chan)
     {
       p->state = RUNNABLE;
-
       global_ticket += p->tickets;
-      global_stride = STRIDE1 / global_ticket;
       p->pass = global_pass + p->remain;
-      break; // Only want 1 process to wake up
     }
+  }
+  if (global_ticket > 0)
+    global_stride = STRIDE1 / global_ticket;
 }
 
 // Wake up all processes sleeping on chan.
 void wakeup(void *chan)
 {
+  // if (ptable.lock.locked != 1)
   acquire(&ptable.lock);
   wakeup1(chan);
+  // if (&ptable.lock.locked != 0)
   release(&ptable.lock);
 }
 
@@ -590,7 +626,7 @@ int kill(int pid)
       p->killed = 1;
 
       global_ticket -= p->tickets;
-      global_stride = STRIDE1 / global_ticket;
+      
       p->remain = p->pass - global_pass;
 
       // Wake process from sleep if necessary.
@@ -600,6 +636,8 @@ int kill(int pid)
       return 0;
     }
   }
+  if (global_ticket > 0)
+    global_stride = STRIDE1 / global_ticket;
   release(&ptable.lock);
   return -1;
 }
@@ -655,4 +693,19 @@ int procindex(struct proc *tofind)
   }
   // This means that we couldn't find the process
   return -1;
+}
+
+void acquirelock()
+{
+  acquire(&ptable.lock);
+}
+
+void releaselock()
+{
+  release(&ptable.lock);
+}
+
+struct proc *gettable(void)
+{
+  return ptable.proc;
 }
